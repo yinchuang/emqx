@@ -94,14 +94,15 @@ spec:
           ports:
             - name: emqx-mqtt
               containerPort: 1883
-            - name: emqx-ssl
-              containerPort: 8883
             - name: emqx-websocket
               containerPort: 8083
             - name: emqx-httpapi
               containerPort: 8080
             - name: emqx-dashboard
               containerPort: 18083
+            - containerPort: 4369
+            - containerPort: 5369
+            - containerPort: 6369
           envFrom:
           - configMapRef:
               name: emqx
