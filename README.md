@@ -1,2 +1,2 @@
 # emqx
- emqx on kubernets
+ emqx3.2.7 on kubernets

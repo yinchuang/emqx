@@ -1,0 +1,19 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: emqx
+  namespace: custom
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - host: emqx.develop.susoncloud.cn
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: emqx 
+          servicePort: 18083

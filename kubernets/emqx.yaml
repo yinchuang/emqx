@@ -1,0 +1,120 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: emqx
+  namespace: custom
+rules:
+- apiGroups: [""] 
+  resources:
+    - services
+    - endpoints
+    - pods
+  verbs: ["get", "watch", "list"]
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: emqx
+  namespace: custom
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: emqx
+  namespace: custom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: emqx
+subjects:
+- kind: ServiceAccount
+  name: emqx
+  namespace: custom
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: emqx
+  namespace: custom
+data:
+  EMQX_NAME: "emqx"
+  EMQX_CLUSTER__DISCOVERY: "k8s"
+  EMQX_CLUSTER__K8S__NAMESPACE: "custom"
+  EMQX_CLUSTER__K8S__APISERVER: "https://192.168.0.5:6443"
+  EMQX_CLUSTER__K8S__SERVICE_NAME: "emqx"
+  EMQX_CLUSTER__K8S__ADDRESS_TYPE: "ip"
+  EMQX_CLUSTER__K8S__APP_NAME: "emqx"
+  EMQX_CLUSTER__AUTOHEAL: "on"
+  EMQX_CLUSTER__AUTOCLEAN: "5m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emqx
+  namespace: custom
+  labels:
+    app: emqx
+spec:
+  ports:
+    - name: emqx-dashboard
+      protocol: TCP
+      port: 18083
+      targetPort: 18083
+  selector:
+    app: emqx
+  type: ClusterIP
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: emqx
+  namespace: custom
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: emqx
+  template:
+    metadata:
+      labels:
+        app: emqx
+    spec:
+      hostname: emqx
+      serviceAccountName: emqx 
+      containers:
+        - name: emqx
+          image: registry.cn-chengdu.aliyuncs.com/susoncloud-base/emqx:v3.2.7                                             ###习惯了centos7，所以自己制作了镜像
+          imagePullPolicy: Always 
+          ports:
+            - name: emqx-mqtt
+              containerPort: 1883
+            - name: emqx-ssl
+              containerPort: 8883
+            - name: emqx-websocket
+              containerPort: 8083
+            - name: emqx-httpapi
+              containerPort: 8080
+            - name: emqx-dashboard
+              containerPort: 18083
+          envFrom:
+          - configMapRef:
+              name: emqx
+          tty: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: aliyun                                                                                                       ###根据运营商自己创建
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+---
